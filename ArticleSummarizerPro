@@ -1,0 +1,43 @@
+# Import necessary modules
+from langflow import LangFlow, LangFlowStep
+from langflow.steps import TextInput, WebScrape, SummarizeText, Output
+
+# Define the LangFlow pipeline
+class ArticleSummaryWorkflow(LangFlow):
+    def __init__(self):
+        super().__init__()
+
+        # Step 1: Take a query as input from the user
+        self.query_input = TextInput("What topic would you like to know more about?")
+
+        # Step 2: Use web scraping to find articles related to the query
+        self.scrape_articles = WebScrape(
+            input=self.query_input, 
+            output_field="articles",
+            url_template="https://news.google.com/search?q={query_input}",
+            scrape_rule="div.BVG0Nb",  # Assume articles are inside <div class='BVG0Nb'>
+            max_results=3
+        )
+
+        # Step 3: Summarize the scraped articles
+        self.summarize_articles = SummarizeText(
+            input=self.scrape_articles, 
+            max_length=250,
+            model="gpt-4",  # Or any LLM model of your choice
+            output_field="summaries"
+        )
+
+        # Step 4: Return the summary as output to the user
+        self.output_summary = Output(self.summarize_articles)
+
+    # Define the run method to execute the workflow
+    def run(self):
+        self.query_input.run()
+        self.scrape_articles.run()
+        self.summarize_articles.run()
+        self.output_summary.run()
+
+
+# Initialize and run the LangFlow
+workflow = ArticleSummaryWorkflow()
+workflow.run()
